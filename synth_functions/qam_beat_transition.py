@@ -127,8 +127,7 @@ def _qam_beat_core(
     startPhaseL, startPhaseR,
     phaseOscFreq, phaseOscRange, phaseOscPhaseOffset,
     beatingSidebands, sidebandOffset, sidebandDepth,
-    attackTime, releaseTime,
-    alpha_arr
+    attackTime, releaseTime
 ):
     if N <= 0:
         return np.zeros((0, 2), dtype=np.float32)
@@ -246,10 +245,7 @@ def _qam_beat_core(
     return out
 
 
-from .common import calculate_transition_alpha
-
-
-def qam_beat_transition(duration, sample_rate=44100, initial_offset=0.0, post_offset=0.0, **params):
+def qam_beat_transition(duration, sample_rate=44100, **params):
     """
     Enhanced QAM-based binaural beat with parameter transitions.
     Includes all enhanced features with smooth interpolation.
@@ -339,8 +335,6 @@ def qam_beat_transition(duration, sample_rate=44100, initial_offset=0.0, post_of
     if N <= 0:
         return np.zeros((0, 2), dtype=np.float32)
     
-    alpha_arr = calculate_transition_alpha(duration, sample_rate, initial_offset, post_offset)
-
     raw_signal = _qam_beat_transition_core(
         N, float(duration), float(sample_rate),
         startAmpL, endAmpL, startAmpR, endAmpR,
@@ -361,8 +355,7 @@ def qam_beat_transition(duration, sample_rate=44100, initial_offset=0.0, post_of
         startStartPhaseL, endStartPhaseL, startStartPhaseR, endStartPhaseR,
         phaseOscPhaseOffset,
         beatingSidebands, sidebandOffset, sidebandDepth,
-        attackTime, releaseTime,
-        alpha_arr
+        attackTime, releaseTime
     )
     
     if raw_signal.size > 0:
@@ -400,11 +393,11 @@ def _qam_beat_transition_core(
         return np.zeros((0, 2), dtype=np.float32)
     
     t_arr = np.empty(N, dtype=np.float64)
+    alpha_arr = np.empty(N, dtype=np.float64)
     dt = duration_float / N
     for i in numba.prange(N):
         t_arr[i] = i * dt
-        alpha = alpha_arr[i] if alpha_arr.size == N else (i / (N - 1) if N > 1 else 0.0)
-        alpha_arr[i] = alpha
+        alpha_arr[i] = i / (N - 1) if N > 1 else 0.0
     
     # Interpolate all transitioning parameters
     ampL_arr = np.empty(N, dtype=np.float64)
